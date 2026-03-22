@@ -35,7 +35,7 @@ class StatusFormatter:
         header = (
             f"*Your Standup Status*\n"
             f"Week of: {week_anchor}\n"
-            f"Submitted: {submitted_at or '_unknown_'}\n"
+            f"Submitted: {submitted_at or '\\_unknown\\_'}\n"
             f"Review status: {emoji} {status_label}\n\n"
         )
 
