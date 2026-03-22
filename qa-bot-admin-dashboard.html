@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QA Standup Bot - Admin Dashboard & Simulator</title>
+    <style>
+        :root {
+            --primary: #2481cc; /* Telegram Blue ish */
+            --primary-dark: #1a6180;
+            --secondary: #f0f2f5;
+            --text-main: #222222;
+            --text-muted: #707579;
+            --success: #31a952;
+            --warning: #e0a030;
+            --danger: #d9534f;
+            --border: #dfe1e5;
+            --radius: 8px;
+            --shadow: 0 2px 5px rgba(0,0,0,0.05);
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--secondary);
+            color: var(--text-main);
+            line-height: 1.5;
+            padding-bottom: 40px;
+        }
+
+        /* Utility */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+
+        .hidden { display: none !important; }
+
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .justify-between { justify-content: space-between; }
+        .items-center { align-items: center; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-4 { gap: 1rem; }
+        .mt-4 { margin-top: 1rem; }
+        .mb-4 { margin-bottom: 1rem; }
+
+        .text-sm { font-size: 0.875rem; }
+        .text-muted { color: var(--text-muted); }
+        .text-danger { color: var(--danger); }
+        .text-success { color: var(--success); }
+        .font-bold { font-weight: 600; }
+
+        /* Components */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: var(--radius);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+            text-decoration: none;
+        }
+
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: var(--primary-dark); }
+        .btn-outline { background-color: transparent; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-outline:hover { background-color: #e8eaed; }
+        .btn-danger { background-color: var(--danger); color: white; }
+        .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
+
+        .card {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 1rem;
+        }
+
+        .input-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            color: var(--text-muted);
+        }
+
+        .input-control {
+            padding: 0.6rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        .input-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(36, 129, 204, 0.1);
+        }
+
+        /* Header */
+        header {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .user-toggle {
+            font-size: 0.9rem;
+            background: var(--secondary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--text-muted);
+        }
+        .status-dot.lead { background-color: var(--success); }
+
+        /* Layout Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        @media (min-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 350px 1fr;
+            }
+        }
+
+        /* Squad List */
+        .squad-item {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: #fafafa;
+        }
+
+        .squad-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .squad-members {
+            list-style: none;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .squad-members li {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.25rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .squad-members li:last-child { border-bottom: none; }
+
+        /* Console/Output */
+        .console-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            font-family: "Courier New", Courier, monospace;
+            padding: 1rem;
+            border-radius: var(--radius);
+            min-height: 300px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+        }
+
+        .console-line { margin-bottom: 4px; }
+        .console-line.system { color: #569cd6; }
+        .console-line.success { color: #6a9955; }
+        .console-line.error { color: #f44747; }
+        .console-line.info { color: #dcdcaa; }
+
+        .console-btn-area {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            align-items: center;
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: #333;
+            color: white;
+            padding: 12px 24px;
+            border-radius: var(--radius);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideIn 0.3s ease-out;
+            max-width: 300px;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .badge-missing { background: #ffebee; color: var(--danger); }
+        .badge-submitted { background: #e8f5e9; color: var(--success); }
+        .badge-reminded { background: #e3f2fd; color: var(--primary); }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+        }
+        .empty-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container flex justify-between items-center">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                QA Bot Admin
+            </div>
+            <div class="user-toggle">
+                <div id="userStatusDot" class="status-dot"></div>
+                <span id="currentUserId">User: Guest</span>
+                <button id="toggleUserBtn" class="btn btn-sm btn-outline">Act as QA Lead</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <div class="dashboard-grid">
+
+            <!-- Sidebar: Squad Management -->
+            <section>
+                <div class="card">
+                    <h2 class="mb-4">Squad Configuration</h2>
+                    <p class="text-sm text-muted mb-4">Manage squads and members. Simulates the `squads` and `squad_members` DB tables.</p>
+
+                    <div id="squadForm" class="input-group">
+                        <label for="squadNameInput">New Squad Name</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="squadNameInput" class="input-control" placeholder="e.g. Alpha Squad">
+                            <button id="addSquadBtn" class="btn btn-primary">Add</button>
+                        </div>
+                    </div>
+
+                    <div id="memberForm" class="input-group hidden">
+                        <label>Add Member to <span id="targetSquadName" class="font-bold text-primary"></span></label>
+                        <div class="flex gap-2 mb-2">
+                            <input type="text" id="memberNameInput" class="input-control" placeholder="Member Name">
+                            <input type="number" id="memberIdInput" class="input-control" placeholder="TG ID" style="width: 80px;">
+                            <button id="addMemberBtn" class="btn btn-primary">+</button>
+                        </div>
+                        <button id="cancelMemberBtn" class="btn btn-sm btn-outline">Cancel</button>
+                    </div>
+                </div>
+
+                <div id="squadListContainer">
+                    <!-- Squads rendered here -->
+                </div>
+            </section>
+
+            <!-- Main: Command Simulator -->
+            <section>
+                <div class="card">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2>Command Simulator</h2>
+                        <div class="text-sm text-muted">Current Week: <span id="currentWeekDisplay" class="font-bold text-main"></span></div>
+                    </div>
+
+                    <div class="console-btn-area">
+                        <code style="background: #eee; padding: 0.5rem; border-radius: 4px; font-family: monospace;">/remind</code>
+                        <button id="executeRemindBtn" class="btn btn-primary">Execute Command</button>
+                        <button id="resetDataBtn" class="btn btn-outline">Reset Data</button>
+                    </div>
+
+                    <div class="console-output" id="consoleOutput">
+                        <div class="console-line system">Ready. Waiting for command...</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="mb-4">Submission Tracker</h3>
+                    <p class="text-sm text-muted mb-4">Simulates `weekly_reports` table. Click toggle to simulate a user submitting their report.</p>
+                    <div id="trackerList">
+                        <!-- Tracker items rendered here -->
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        /**
+         * QA Bot Admin Dashboard - Interactive Simulator
+         * Simulates the backend logic for the /remind feature in the frontend.
+         */
+
+        // --- Config & State ---
+        const QA_LEAD_ID = 999999;
+        let currentUser = {
+            id: 111111,
+            name: "Standard User"
+        };
+
+        // Mock Data Models
+        let squads = [
+            { id: 1, name: "Platform Squad", chatId: -1001 },
+            { id: 2, name: "Mobile Squad", chatId: -1002 },
+            { id: 3, name: "Data Squad", chatId: null } // Null chat ID implies DM fallback
+        ];
+
+        let squadMembers = [
+            { id: 101, squadId: 1, name: "Alice", telegramId: 501 },
+            { id: 102, squadId: 1, name: "Bob", telegramId: 502 },
+            { id: 103, squadId: 2, name: "Charlie", telegramId: 503 },
+            { id: 104, squadId: 2, name: "Dana", telegramId: 504 },
+            { id: 105, squadId: 3, name: "Eve", telegramId: 505 } // No submission yet
+        ];
+
+        // Key: telegram_id, Value: ISO Week Date (YYYY-MM-DD)
+        // Simulates weekly_reports table
+        let submissions = {};
+
+        // Key: squad_id + "_" + week_date, Value: timestamp
+        // Simulates reminder_log table for idempotency
+        let reminderLog = {};
+
+        // --- Helpers ---
+        function getIsoMonday(d) {
+            d = new Date(d);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            const monday = new Date(d.setDate(diff));
+            return monday.toISOString().split('T')[0];
+        }
+
+        const currentWeek = getIsoMonday(new Date());
+        document.getElementById('currentWeekDisplay').textContent = currentWeek;
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+
+            if (type === 'error') toast.style.borderLeft = '4px solid var(--danger)';
+            if (type === 'success') toast.style.borderLeft = '4px solid var(--success)';
+
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function logToConsole(text, type = '') {
+            const consoleEl = document.getElementById('consoleOutput');
+            const line = document.createElement('div');
+            line.className = `console-line ${type}`;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
+            consoleEl.appendChild(line);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        // --- UI Rendering ---
+        function renderSquads() {
+            const container = document.getElementById('squadListContainer');
+            container.innerHTML = '';
+
+            if (squads.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <span class="empty-icon">📭</span>
+                        <p>No squads configured.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            squads.forEach(squad => {
+                const members = squadMembers.filter(m => m.squadId === squad.id);
+                const membersHtml = members.map(m => `
+                    <li>
+                        <span>${m.name}</span>
+                        <span class="text-muted" style="font-family:monospace">ID: ${m.telegramId}</span>
+                    </li>
+                `).join('');
+
+                const div = document.createElement('div');
+                div.className = 'squad-item';
+                div.innerHTML = `
+                    <div class="squad-header">
+                        <div>
+                            <strong>${squad.name}</strong>
+                            <span class="text-sm text-muted ml-2">
+                                ${squad.chatId ? `📢 Chat ${squad.chatId}` : '📩 DM Only'}
+                            </span>
+                        </div>
+                        <button class="btn btn-sm btn-outline" onclick="openAddMember(${squad.id}, '${squad.name}')">
+                            + Member
+                        </button>
+                    </div>
+                    <ul class="squad-members">
+                        ${membersHtml || '<li class="text-muted italic">No members yet</li>'}
+                    </ul>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function renderTracker() {
+            const container = document.getElementById('trackerList');
+            container.innerHTML = '';
+
+            if (squadMembers.length === 0) {
+                container.innerHTML = '<p class="text-muted text-sm">No members in system.</p>';
+                return;
+            }
+
+            squadMembers.forEach(member => {
+                const hasSubmitted = submissions[member.telegramId] === currentWeek;
+                const squad = squads.find(s => s.id === member.squadId);
+
+                const div = document.createElement('div');
+                div.className = 'flex justify-between items-center p-2 border-b';
+                div.style.padding = '0.75rem 0';
+                div.style.borderBottom = '1px solid #eee';
+
+                div.innerHTML = `
+                    <div>
+                        <div class="font-bold">${member.name}</div>
+                        <div class="text-sm text-muted">${squad ? squad.name : 'Unknown Squad'}</div>
+                    </div>
+                    <button
+                        class="btn btn-sm ${hasSubmitted ? 'btn-success' : 'btn-outline'}"
+                        onclick="toggleSubmission(${member.telegramId})"
+                        style="${hasSubmitted ? 'background-color:var(--success); color:white' : ''}"
+                    >
+                        ${hasSubmitted ? 'Submitted ✓' : 'Mark Submitted'}
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function updateUserDisplay() {
+            const dot = document.getElementById('userStatusDot');
+            const text = document.getElementById('currentUserId');
+            const btn = document.getElementById('toggleUserBtn');
+
+            if (currentUser.id === QA_LEAD_ID) {
+                dot.classList.add('lead');
+                text.textContent = `QA Lead (ID: ${currentUser.id})`;
+                btn.textContent = 'Revert to User';
+            } else {
+                dot.classList.remove('lead');
+                text.textContent = `Standard User (ID: ${currentUser.id})`;
+                btn.textContent = 'Act as QA Lead';
+            }
+        }
+
+        // --- Logic Implementation ---
+
+        function toggleSubmission(telegramId) {
+            if (submissions[telegramId] === currentWeek) {
+                delete submissions[telegramId];
+                showToast('Submission removed', 'info');
+            } else {
+                submissions[telegramId] = currentWeek;
+                showToast('Weekly update recorded', 'success');
+            }
+            renderTracker();
+        }
+
+        function openAddMember(squadId, squadName) {
+            document.getElementById('memberForm').classList.remove('hidden');
+            document.getElementById('squadForm').classList.add('hidden');
+            document.getElementById('targetSquadName').textContent = squadName;
+            document.getElementById('targetSquadName').dataset.squadId = squadId;
+        }
+
+        // --- Core Feature Logic: /remind ---
+
+        async function executeRemind() {
+            const consoleEl = document.getElementById('consoleOutput');
+            consoleEl.innerHTML = ''; // Clear log
+            document.getElementById('executeRemindBtn').disabled = true;
+
+            // 1. Auth Check
+            logToConsole(`Verifying permissions for User ID: ${currentUser.id}...`);
+            await delay(600);
+
+            if (currentUser.id !== QA_LEAD_ID) {
+                logToConsole('Error: Authorization failed.', 'error');
+                logToConsole(`User ${currentUser.id} does not have QA Lead role.`, 'error');
+                document.getElementById('executeRemindBtn').disabled = false;
+                showToast('Access Denied: QA Lead role required', 'error');
+                return;
+            }
+
+            logToConsole('Authorization successful.', 'success');
+            await delay(400);
+
+            // 2. Identify Missing Squads
+            logToConsole('Querying database for weekly reports...');
+            const missingSquads = [];
+
+            squads.forEach(squad => {
+                // Get members of squad
+                const members = squadMembers.filter(m => m.squadId === squad.id);
+                // Check if ANY member is missing a report
+                const isMissing = members.some(m => submissions[m.telegramId] !== currentWeek);
+
+                if (isMissing) {
+                    missingSquads.push({
+                        ...squad,
+                        missingMembers: members.filter(m => submissions[m.telegramId] !== currentWeek)
+                    });
+                }
+            });
+
+            await delay(500);
+
+            if (missingSquads.length === 0) {
+                logToConsole('Analysis complete: All squads have submitted.', 'success');
+                logToConsole('Bot Response: "✅ All squads have submitted their weekly updates. No reminders needed."', 'info');
+                document.getElementById('executeRemindBtn').disabled = false;
+                showToast('All squads up to date', 'success');
+                return;
+            }
+
+            logToConsole(`Found ${missingSquads.length} squad(s) missing updates.`, 'warning');
+
+            // 3. Filter Idempotency (already reminded)
+            const squadsToRemind = missingSquads.filter(squad => {
+                const logKey = `${squad.id}_${currentWeek}`;
+                const alreadyReminded = reminderLog.hasOwnProperty(logKey);
+                if (alreadyReminded) {
+                    logToConsole(`Skipping ${squad.name}: Already reminded this week.`, 'system');
+                }
+                return !alreadyReminded;
+            });
+
+            if (squadsToRemind.length === 0) {
+                logToConsole('No new squads to remind (idempotency check).', 'system');
+                document.getElementById('executeRemindBtn').disabled = false;
+                return;
+            }
+
+            // 4. Send Reminders
+            logToConsole('Sending reminder messages...', 'system');
+
+            let successCount = 0;
+
+            for (const squad of squadsToRemind) {
+                await delay(800); // Simulate network latency per send
+
+                const target = squad.chatId ? `Channel ${squad.chatId}` : `Direct Messages`;
+                logToConsole(`📤 Sending to ${squad.name} (${target})...`, 'info');
+
+                // Simulate message content
+                const msg = `"👋 Hello ${squad.name}! It looks like some members haven't submitted their weekly update yet. Please submit by EOD."`;
+                logToConsole(`   Payload: ${msg}`, 'system');
+
+                // Log to DB (Simulated)
+                const logKey = `${squad.id}_${currentWeek}`;
+                reminderLog[logKey] = Date.now();
+
+                successCount++;
+            }
+
+            // 5. Summary
+            logToConsole('--------------------------------------------------', 'system');
+            logToConsole(`✅ Operation Complete. Reminded ${successCount} squad(s).`, 'success');
+
+            const remindedNames = squadsToRemind.map(s => s.name).join(', ');
+            logToConsole(`Summary: ${remindedNames}`, 'info');
+
+            document.getElementById('executeRemindBtn').disabled = false;
+            showToast(`Reminded ${successCount} squads`, 'success');
+        }
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // --- Event Listeners ---
+
+        document.getElementById('toggleUserBtn').addEventListener('click', () => {
+            if (currentUser.id === QA_LEAD_ID) {
+                currentUser = { id: 111111, name: "Standard User" };
+            } else {
+                currentUser = { id: QA_LEAD_ID, name: "QA Lead" };
+            }
+            updateUserDisplay();
+        });
+
+        document.getElementById('addSquadBtn').addEventListener('click', () => {
+            const input = document.getElementById('squadNameInput');
+            const name = input.value.trim();
+            if (!name) return showToast('Please enter a squad name', 'error');
+
+            const newId = squads.length > 0 ? Math.max(...squads.map(s => s.id)) + 1 : 1;
+            squads.push({ id: newId, name: name, chatId: null }); // Chat ID null by default for demo simplicity
+            input.value = '';
+            renderSquads();
+            showToast(`Squad "${name}" created`, 'success');
+        });
+
+        document.getElementById('addMemberBtn').addEventListener('click', () => {
+            const nameInput = document.getElementById('memberNameInput');
+            const idInput = document.getElementById('memberIdInput');
+            const squadId = parseInt(document.getElementById('targetSquadName').dataset.squadId);
+
+            const name = nameInput.value.trim();
+            const tId = parseInt(idInput.value);
+
+            if (!name || !tId) return showToast('Fill in all member details', 'error');
+
+            squadMembers.push({
+                id: Date.now(),
+                squadId: squadId,
+                name: name,
+                telegramId: tId
+            });
+
+            nameInput.value = '';
+            idInput.value = '';
+            document.getElementById('memberForm').classList.add('hidden');
+            document.getElementById('squadForm').classList.remove('hidden');
+
+            renderSquads();
+            renderTracker();
+            showToast('Member added', 'success');
+        });
+
+        document.getElementById('cancelMemberBtn').addEventListener('click', () => {
+             document.getElementById('memberForm').classList.add('hidden');
+             document.getElementById('squadForm').classList.remove('hidden');
+        });
+
+        document.getElementById('executeRemindBtn').addEventListener('click', executeRemind);
+
+        document.getElementById('resetDataBtn').addEventListener('click', () => {
+            if(confirm("Reset all submissions and logs? Squad config remains.")) {
+                submissions = {};
+                reminderLog = {};
+                renderTracker();
+                logToConsole('System reset.', 'system');
+                showToast('Data reset', 'info');
+            }
+        });
+
+        // Initialize
+        (function init() {
+            renderSquads();
+            renderTracker();
+            updateUserDisplay();
+
+            // Pre-populate a submission for demo purposes
+            submissions[501] = currentWeek; // Alice submitted
+            submissions[502] = currentWeek; // Bob submitted
+            renderTracker();
+        })();
+
+    </script>
+</body>
+</html>
