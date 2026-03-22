@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `/remind` command for QA Leads to send targeted reminders to squads missing weekly updates
+- Squad and SquadMember database models for squad-based organization
+- ReminderLog model for tracking sent reminders (ensuring idempotency)
+- `QA_LEAD_IDS` environment variable for command authorization
+- Database migration `0003_add_squads_reminder.sql` to add squad-related tables
+- ReminderService for core reminder logic
+- RemindHandler for processing `/remind` Telegram commands
+- ReminderFormatter for generating reminder message templates
+- Support for both channel-based and DM-based reminders
+- Summary response to QA Lead showing which squads were reminded
+
+### Changed
+- Enhanced weekly report tracking to support squad-based queries
+- Updated router to register new `/remind` command handler
+
+### Security
+- Added authorization check for `/remind` command using `QA_LEAD_IDS`
+
 ## [1.1.0] - 2026-03-22
 
 ### Added
