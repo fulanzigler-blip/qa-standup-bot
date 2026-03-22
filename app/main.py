@@ -5,6 +5,7 @@ import os
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from telegram.ext import Application
 
+from app.bot.commands import register_commands
 from app.bot.router import setup_router
 
 logging.basicConfig(
@@ -29,8 +30,14 @@ async def main() -> None:
     application = Application.builder().token(bot_token).build()
     setup_router(application, session_factory)
 
-    logger.info("Starting bot...")
+    logger.info("Initializing bot...")
     await application.initialize()
+
+    # Register commands for Telegram UI menu
+    await register_commands(application)
+    logger.info("Bot commands registered.")
+
+    logger.info("Starting bot...")
     await application.start()
     await application.updater.start_polling(drop_pending_updates=True)
 
